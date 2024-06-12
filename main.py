@@ -1,53 +1,79 @@
 import httpx
 from prefect import task, flow, get_run_logger
-from httpx import TimeoutException
 from time import sleep
+import asyncio
 
-API_KEY = "sua_chave_api"
+# API_KEY = "sua_chave_api"
 BASE_URL = "https://rickandmortyapi.com/api"
 
 
-@task
+class CustomRequestException(Exception):
+    pass
+
+
+attempt_count = 0
+
+
+@task(
+    retries=3,
+    retry_delay_seconds=2,
+    timeout_seconds=1,
+)
 def get_all_character_data():
+    global attempt_count
+    logger = get_run_logger()
     try:
+        attempt_count += 1
+        if attempt_count == 1:
+            sleep(2)
         url = f"{BASE_URL}/character"
-        sleep(2)
-        api_response = httpx.get(url, verify=False, timeout=5)
-        api_response.raise_for_status()
-        logger = get_run_logger()
-        logger.info("Fetched all character data successfully 🤓:")
-        return api_response.json()
-    except httpx.RequestError as e:
-        logger = get_run_logger()
-        logger.error(f"Failed to fetch all character data: {str(e)}")
-        raise
-
-
-@task
-def get_single_character_data(id: int):
-    try:
-        url = f"{BASE_URL}/character/{id}"
         api_response = httpx.get(url, verify=False)
         api_response.raise_for_status()
-        logger = get_run_logger()
         logger.info("Fetched all character data successfully 🤓:")
         return api_response.json()
-    except httpx.RequestError as e:
-        logger = get_run_logger()
-        logger.error(f"Failed to fetch all character data: {str(e)}")
-        raise
+    except asyncio.CancelledError as e:
+        custom_message = (
+            "Error: Task get_all_character_data "
+            "was cancelled due to timeout"
+        )
+        logger.error(custom_message)
+        raise CustomRequestException(custom_message) from e
 
 
-@flow(retries=3, retry_delay_seconds=2, timeout_seconds=1)
-def single_character_data():
-    final_state = get_all_character_data.submit().wait(0.1)
+@task(
+    retries=3,
+    retry_delay_seconds=2,
+)
+def get_all_episode_data():
     logger = get_run_logger()
-    if final_state:
-        logger.info("The task is done")
+    try:
+        url = f"{BASE_URL}/episode"
+        api_response = httpx.get(url, verify=False)
+        api_response.raise_for_status()
+        logger.info("Fetched all episode data successfully 🤓:")
+        return api_response.json()
+    except asyncio.CancelledError as e:
+        custom_message = (
+            "Error: Task get_all_episode_data "
+            "was cancelled due to timeout"
+        )
+        logger.error(custom_message)
+        raise CustomRequestException(custom_message) from e
 
-    else:
-        logger.info("The task is canceled because it takes too long to run")
+
+@flow
+def rick_and_morty_data():
+    logger = get_run_logger()
+    try:
+        get_all_character_data()
+    except CustomRequestException as e:
+        logger.error(f"get_all_character_data failed after retries: {e}")
+
+    try:
+        get_all_episode_data()
+    except CustomRequestException as e:
+        logger.error(f"get_all_episode_data failed after retries: {e}")
 
 
 if __name__ == "__main__":
-    single_character_data()
+    rick_and_morty_data()
