@@ -2,8 +2,12 @@ import httpx
 from prefect import task, flow, get_run_logger
 from time import sleep
 import asyncio
+from database.db import insert_character_into_database, insert_episode_into_database, engine, Base
+from models.character import Character
+from models.episode import Episode
 
-# API_KEY = "sua_chave_api"
+Base.metadata.drop_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 BASE_URL = "https://rickandmortyapi.com/api"
 
 
@@ -65,13 +69,15 @@ def get_all_episode_data():
 def rick_and_morty_data():
     logger = get_run_logger()
     try:
-        get_all_character_data()
-    except CustomRequestException as e:
+        character_data = get_all_character_data()
+        insert_character_into_database(character_data, Character)
+    except asyncio.CancelledError as e:
         logger.error(f"get_all_character_data failed after retries: {e}")
 
     try:
-        get_all_episode_data()
-    except CustomRequestException as e:
+        episode_data = get_all_episode_data()
+        insert_episode_into_database(episode_data, Episode)
+    except asyncio.CancelledError as e:
         logger.error(f"get_all_episode_data failed after retries: {e}")
 
 

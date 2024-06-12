@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    volumes:
+     - rickmortydata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ap1rickmorty
+    ports:
+      - 5432:5432
+volumes:
+  rickmortydata:
