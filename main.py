@@ -10,7 +10,6 @@ from database.db import (
 )
 from models.character import Character
 from models.episode import Episode
-import uvicorn
 
 Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
@@ -89,4 +88,3 @@ def rick_and_morty_data():
 
 if __name__ == "__main__":
     rick_and_morty_data()
-    uvicorn.run("api.api:app", host="0.0.0.0", port=8000, reload=True)

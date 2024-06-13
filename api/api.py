@@ -45,22 +45,34 @@ def create_character(character: CharacterModel, db: Session = Depends(get_db)):
 
 
 @app.get("/characters/", response_model=List[CharacterModel])
-def read_characters(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+def read_characters(
+    skip: int = 0,
+    limit: int = 10,
+    db: Session = Depends(get_db)
+):
     characters = db.query(Character).offset(skip).limit(limit).all()
     return characters
 
 
 @app.get("/characters/{character_id}", response_model=CharacterModel)
 def read_character(character_id: int, db: Session = Depends(get_db)):
-    character = db.query(Character).filter(Character.id == character_id).first()
+    character = db.query(Character).filter(
+        Character.id == character_id
+    ).first()
     if character is None:
         raise HTTPException(status_code=404, detail="Character not found")
     return character
 
 
 @app.put("/characters/{character_id}", response_model=CharacterModel)
-def update_character(character_id: int, character: CharacterModel, db: Session = Depends(get_db)):
-    db_character = db.query(Character).filter(Character.id == character_id).first()
+def update_character(
+    character_id: int,
+    character: CharacterModel,
+    db: Session = Depends(get_db)
+):
+    db_character = db.query(Character).filter(
+        Character.id == character_id
+    ).first()
     if db_character is None:
         raise HTTPException(status_code=404, detail="Character not found")
     for key, value in character.dict().items():
@@ -72,7 +84,9 @@ def update_character(character_id: int, character: CharacterModel, db: Session =
 
 @app.delete("/characters/{character_id}", response_model=CharacterModel)
 def delete_character(character_id: int, db: Session = Depends(get_db)):
-    db_character = db.query(Character).filter(Character.id == character_id).first()
+    db_character = db.query(Character).filter(
+        Character.id == character_id
+    ).first()
     if db_character is None:
         raise HTTPException(status_code=404, detail="Character not found")
     db.delete(db_character)
@@ -104,7 +118,11 @@ def read_episode(episode_id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/episodes/{episode_id}", response_model=EpisodeModel)
-def update_episode(episode_id: int, episode: EpisodeModel, db: Session = Depends(get_db)):
+def update_episode(
+    episode_id: int,
+    episode: EpisodeModel,
+    db: Session = Depends(get_db)
+):
     db_episode = db.query(Episode).filter(Episode.id == episode_id).first()
     if db_episode is None:
         raise HTTPException(status_code=404, detail="Episode not found")
